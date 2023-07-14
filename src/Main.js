@@ -7,7 +7,7 @@ function init() {
   inputs.forEach(i => new InputMonth(i));
 }
 
-window.onload = function () {
+document.addEventListener('load', function () {
   if (!Modernizr.inputtypes.month) {
     const MutationObserver = window.MutationObserver || window.WebKitMutationObserver;
     if (MutationObserver) {
@@ -21,4 +21,4 @@ window.onload = function () {
     }
     init();
   }
-}
+});

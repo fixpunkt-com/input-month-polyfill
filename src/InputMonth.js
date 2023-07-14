@@ -4,7 +4,7 @@ export default class InputMonth {
 
   constructor(input) {
     this.original = input;
-    const lang = input.getAttribute('data-lang') ? input.getAttribute('data-lang') : 'en';
+    const lang = input.getAttribute('data-lang') ? input.getAttribute('data-lang') : 'de-DE';
     if (Locales[lang] === undefined) throw 'Language not implemented.';
     this.locales = Locales[lang];
     this.createStructures();
@@ -19,6 +19,9 @@ export default class InputMonth {
       const monthNumber = parseInt(sentence[2]) - 1;
       const months = Object.keys(this.locales);
       this.input.value = `${this.locales[months[monthNumber]]} ${year}`;
+
+      this.setYear(year);
+      this.setMonth(monthNumber + 1);
     }
   }
 
@@ -51,7 +54,17 @@ export default class InputMonth {
     this.container.append(this.viewers);
     this.original.style = 'display: none';
     this.original.classList.add('input-month-polyfill');
-    this.original.parentNode.insertBefore(this.container, this.original.nextSibling);
+    this.original.parentNode.insertBefore(this.container, this.original);
+
+    this.min = 1700;
+    if(this.original.hasAttribute('min')) {
+      let min = parseInt(this.original.getAttribute('min'));
+      if(isNaN(min)) {
+        this.min = (new Date()).getFullYear();
+      } else {
+        this.min = min;
+      }
+    }
   }
 
   bindInputEvents() {
@@ -61,6 +74,15 @@ export default class InputMonth {
     this.input.addEventListener('keydown', this.onInputKeyDown.bind(this));
     this.input.addEventListener('change', this.onInputChange.bind(this));
     this.original.addEventListener('input', this.onOriginalInputChange.bind(this));
+
+    setInterval(() => {
+      const month = this.input.getAttribute('data-month');
+      const year = this.input.getAttribute('data-year');
+      if (month !== '' && year !== '')
+        this.original.value = `${year}-${month.toString().padStart(2, '0')}`;
+      else
+        this.original.value = '';
+    }, 500);
   }
 
   drawMonthButtons() {
@@ -80,6 +102,8 @@ export default class InputMonth {
   }
 
   drawYearButtons(startYear) {
+    startYear = Math.max(this.min || (new Date()).getFullYear(), startYear);
+
     const yB = [];
     const controls = document.createElement('div');
     controls.classList.add('imp--viewer--controls');
