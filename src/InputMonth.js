@@ -7,6 +7,22 @@ export default class InputMonth {
     const lang = input.getAttribute('data-lang') ? input.getAttribute('data-lang') : 'de-DE';
     if (Locales[lang] === undefined) throw 'Language not implemented.';
     this.locales = Locales[lang];
+
+    this.min = [1700, 1];
+    if(this.original.hasAttribute('min')) {
+      let min = parseInt(this.original.getAttribute('min'));
+      let now = new Date();
+
+      now.setMonth(now.getMonth() + 2);
+
+      if(isNaN(min)) {
+        this.min[0] = now.getFullYear();
+        this.min[1] = now.getMonth();
+      } else {
+        this.min[0] = min;
+      }
+    }
+
     this.createStructures();
     this.bindInputEvents();
     this.loadOriginalValue();
@@ -37,7 +53,7 @@ export default class InputMonth {
     this.input.setAttribute('type', 'text');
     this.input.setAttribute('data-month', '');
     this.input.setAttribute('data-year', '');
-    this.input.value = '---------- ----';
+    this.input.value = '[Monat] [Jahr]';
     this.viewers = document.createElement('div');
     this.viewers.classList.add('imp--viewers');
     this.monthViewer = document.createElement('div');
@@ -55,16 +71,6 @@ export default class InputMonth {
     this.original.style = 'display: none';
     this.original.classList.add('input-month-polyfill');
     this.original.parentNode.insertBefore(this.container, this.original);
-
-    this.min = 1700;
-    if(this.original.hasAttribute('min')) {
-      let min = parseInt(this.original.getAttribute('min'));
-      if(isNaN(min)) {
-        this.min = (new Date()).getFullYear();
-      } else {
-        this.min = min;
-      }
-    }
   }
 
   bindInputEvents() {
@@ -102,7 +108,7 @@ export default class InputMonth {
   }
 
   drawYearButtons(startYear) {
-    startYear = Math.max(this.min || (new Date()).getFullYear(), startYear);
+    startYear = Math.max(this.min[0], startYear);
 
     const yB = [];
     const controls = document.createElement('div');
@@ -150,6 +156,8 @@ export default class InputMonth {
   }
 
   setYear(year) {
+    year = Math.max(this.min[0], year);
+
     const sentence = this.input.value.match(/(.+) (.+)/);
     this.input.value = `${sentence[1]} ${year}`;
     this.input.setAttribute('data-year', year);
@@ -178,21 +186,31 @@ export default class InputMonth {
     }
     else {
       e.target.selectionStart = sentence[1].length + 1;
-      e.target.selectionEnd = e.target.selectionStart + 4;
+      e.target.selectionEnd = e.target.selectionStart + sentence[2].length;
       this.monthViewer.style = 'display: none';
       this.yearViewer.style = 'display: block';
     }
   }
 
   onInputChange(e) {
-    const month = e.target.getAttribute('data-month');
-    const year = e.target.getAttribute('data-year');
-    if (month !== '' && year !== '')
+    var month = e.target.getAttribute('data-month');
+    var year = e.target.getAttribute('data-year');
+    if (month !== '' && year !== '') {
+      if(year <= this.min[0]) {
+        year = this.min[0];
+        month = Math.max(this.min[1], month);
+        this.setYear(year);
+        this.setMonth(month);
+      }
+
       this.original.value = `${year}-${month.toString().padStart(2, '0')}`;
-    else
+    } else
       this.original.value = '';
     this.original.dispatchEvent(new Event('change'));
     this.original.dispatchEvent(new Event('blur'));
+
+    this.monthViewer.style = 'display: none';
+    this.yearViewer.style = 'display: none';
   }
 
   onOriginalInputChange(e) {
